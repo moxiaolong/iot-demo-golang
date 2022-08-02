@@ -70,10 +70,12 @@ func main() {
 
 	router.GET("/testBlock", func(ctx *gin.Context) {
 		log.Println("testBlock in")
+		//线程安全
+		contextCopy := ctx.Copy()
 		//协程阻塞
 		go func() {
 			time.Sleep(time.Second * 3)
-			ctx.String(http.StatusOK, "ok")
+			contextCopy.String(http.StatusOK, "ok")
 			log.Println("testBlock ok")
 		}()
 		log.Println("testBlock out")
