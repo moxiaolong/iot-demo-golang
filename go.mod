@@ -6,6 +6,7 @@ require (
 	github.com/eclipse/paho.mqtt.golang v1.4.1
 	github.com/gin-gonic/gin v1.8.1
 	github.com/influxdata/influxdb1-client v0.0.0-20220302092344-a9ab5670611c
+	github.com/mattn/go-sqlite3 v1.14.14
 )
 
 require (

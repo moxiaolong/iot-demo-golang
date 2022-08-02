@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"github.com/gin-gonic/gin"
+	_ "github.com/mattn/go-sqlite3"
 	"iot-demo-golang/src/influx"
 	"iot-demo-golang/src/mqtt"
 	"log"
