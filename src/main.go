@@ -5,7 +5,6 @@ import (
 	"github.com/gin-gonic/gin"
 	_ "github.com/mattn/go-sqlite3"
 	"iot-demo-golang/src/influx"
-	"iot-demo-golang/src/mqtt"
 	"log"
 	"math/rand"
 	"net/http"
@@ -17,7 +16,7 @@ func main() {
 	//连接influx
 	influxConn := influx.Conn()
 	//连接MQTT
-	mqConn := mqtt.Conn("golang-demo")
+	//mqConn := mqtt.Conn("golang-demo")
 	//连接Sqlite
 	sqlConn, sqlConnErr := sql.Open("sqlite3", "test.db")
 	if sqlConnErr != nil {
@@ -48,7 +47,7 @@ func main() {
 		}
 
 		//发送到MQ
-		mqConn.Publish("test", 1, false, temperature)
+		//mqConn.Publish("test", 1, false, temperature)
 
 		//保存到Sqlite
 		_, err = sqlConn.Exec("update temperature_data set temperature=" + strconv.Itoa(temperature) + " where id =1")
@@ -70,15 +69,12 @@ func main() {
 
 	router.GET("/testBlock", func(ctx *gin.Context) {
 		log.Println("testBlock in")
-		//线程安全
-		contextCopy := ctx.Copy()
-		//协程阻塞
-		go func() {
-			time.Sleep(time.Second * 3)
-			contextCopy.String(http.StatusOK, "ok")
-			log.Println("testBlock ok")
-		}()
+
+		time.Sleep(time.Second * 3)
+		ctx.String(http.StatusOK, "ok")
+
 		log.Println("testBlock out")
+
 	})
 
 	//启动路由
