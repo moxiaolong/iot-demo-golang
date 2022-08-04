@@ -3,8 +3,9 @@ package main
 import (
 	"database/sql"
 	MQTT "github.com/eclipse/paho.mqtt.golang"
-	"github.com/gin-gonic/gin"
 	_ "github.com/mattn/go-sqlite3"
+	"github.com/savsgio/atreugo/v11"
+	_ "github.com/savsgio/atreugo/v11"
 	"iot-demo-golang/src/influx"
 	"iot-demo-golang/src/mqtt"
 	"log"
@@ -27,11 +28,8 @@ func main() {
 	if sqlConnErr != nil {
 		log.Fatal(sqlConnErr)
 	}
-
-	//创建路由
-	router := gin.Default()
-	// 绑定路由规则，执行的函数
-	router.GET("/save", func(ctx *gin.Context) {
+	server := atreugo.New(atreugo.Config{Addr: "0.0.0.0:8080"})
+	server.GET("/save", func(ctx *atreugo.RequestCtx) error {
 		//随机温度
 		temperature := rand.Intn(21) + 16
 		data := Data{
@@ -47,8 +45,7 @@ func main() {
 		//保存到influx
 		err := influx.Insert(influxConn, "test", "temperature", tagMap, filedMap)
 		if err != nil {
-			ctx.String(http.StatusInternalServerError, err.Error())
-			return
+			return ctx.ErrorResponse(err, http.StatusInternalServerError)
 		}
 
 		//发送到MQ
@@ -57,33 +54,29 @@ func main() {
 		//保存到Sqlite
 		_, err = sqlConn.Exec("update temperature_data set temperature=" + strconv.Itoa(temperature) + " where id =1")
 		if err != nil {
-			ctx.String(http.StatusInternalServerError, err.Error())
-			return
+			return ctx.ErrorResponse(err, http.StatusInternalServerError)
 		}
-		ctx.JSON(http.StatusOK, data)
+		return ctx.JSONResponse(data, http.StatusOK)
+
 	})
 
-	router.GET("/queryResult", func(ctx *gin.Context) {
+	server.GET("/queryResult", func(ctx *atreugo.RequestCtx) error {
 		res, err := influx.QueryDB(influxConn, "test", "SELECT MEAN(temperature) FROM temperature WHERE time > now() - 20m")
 		if err != nil {
-			ctx.String(http.StatusInternalServerError, err.Error())
-			return
+			return ctx.ErrorResponse(err, http.StatusInternalServerError)
 		}
-		ctx.JSON(http.StatusOK, res)
+		return ctx.JSONResponse(res, http.StatusOK)
 	})
 
-	router.GET("/testBlock", func(ctx *gin.Context) {
+	server.GET("/testBlock", func(ctx *atreugo.RequestCtx) error {
 		log.Println("testBlock in")
-
 		time.Sleep(time.Second * 3)
-		ctx.String(http.StatusOK, "ok")
-
 		log.Println("testBlock out")
-
+		return ctx.TextResponse("ok", http.StatusOK)
 	})
 
 	//启动路由
-	routeErr := router.Run(":8080")
+	routeErr := server.ListenAndServe()
 	if routeErr != nil {
 		log.Fatal(routeErr)
 	}
