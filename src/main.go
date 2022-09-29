@@ -5,17 +5,20 @@ import (
 	MQTT "github.com/eclipse/paho.mqtt.golang"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/savsgio/atreugo/v11"
-	_ "github.com/savsgio/atreugo/v11"
 	"iot-demo-golang/src/influx"
 	"iot-demo-golang/src/mqtt"
 	"log"
 	"math/rand"
 	"net/http"
+	_ "net/http/pprof"
 	"strconv"
 	"time"
 )
 
 func main() {
+	go func() {
+		log.Println(http.ListenAndServe(":6060", nil))
+	}()
 	//连接influx
 	influxConn := influx.Conn()
 	//连接MQTT
@@ -25,10 +28,12 @@ func main() {
 	})
 	//连接Sqlite
 	sqlConn, sqlConnErr := sql.Open("sqlite3", "test.db")
+
 	if sqlConnErr != nil {
 		log.Fatal(sqlConnErr)
 	}
 	server := atreugo.New(atreugo.Config{Addr: "0.0.0.0:8080"})
+
 	server.GET("/save", func(ctx *atreugo.RequestCtx) error {
 		//随机温度
 		temperature := rand.Intn(21) + 16
@@ -51,7 +56,6 @@ func main() {
 		//发送到MQ
 		mqConn.Publish("test", 1, false, temperature)
 
-		//保存到Sqlite
 		_, err = sqlConn.Exec("update temperature_data set temperature=" + strconv.Itoa(temperature) + " where id =1")
 		if err != nil {
 			return ctx.ErrorResponse(err, http.StatusInternalServerError)
