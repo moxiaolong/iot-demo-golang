@@ -17,7 +17,9 @@ import (
 
 func main() {
 	go func() {
+		log.Println("begin http")
 		log.Println(http.ListenAndServe(":6060", nil))
+		log.Println("end http")
 	}()
 	//连接influx
 	influxConn := influx.Conn()
